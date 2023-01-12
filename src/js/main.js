@@ -87,10 +87,19 @@
       const partScrollEnd = values[2].end * scrollHeight;
       const partScrollHeight = partScrollEnd - partScrollStart;
 
-      rv =
-        ((currentYOffset - partScrollStart) / partScrollHeight) *
-          (values[1] - values[0]) +
-        values[0];
+      if (
+        currentYOffset >= partScrollStart &&
+        currentYOffset <= partScrollEnd
+      ) {
+        rv =
+          ((currentYOffset - partScrollStart) / partScrollHeight) *
+            (values[1] - values[0]) +
+          values[0];
+      } else if (currentYOffset < partScrollStart) {
+        rv = values[0];
+      } else if (currentYOffset > partScrollEnd) {
+        rv = values[1];
+      }
     } else {
       rv = scrollRatio * (values[1] - values[0]) + values[0];
     }
