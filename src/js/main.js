@@ -2,6 +2,7 @@
   let yOffset = 0; // page yOffset 대신 쓸 변수
   let prevScrollHeight = 0; // 현재 스크롤 위치(yOffset)보다 이전에 위치한 스크롤 섹션들의 스크롤 높이값의 합
   let currentScene = 0; // 현재 활성화된(눈 앞에 보고있는) 씬(scroll-section)
+  let enterNewScene = false; // 새로운 scene이 시작된 순간 true
 
   const sceneInfo = [
     {
@@ -17,7 +18,8 @@
         messageD: document.querySelector("#scroll-section-0 .main-message.d"),
       },
       values: {
-        messageAOpacity: [0, 1],
+        messageAOpacity: [0, 1, { start: 0.1, end: 0.2 }],
+        messageBOpacity: [0, 1, { start: 0.3, end: 0.4 }],
       },
     },
     {
@@ -76,9 +78,22 @@
   function calcValues(values, currentYOffset) {
     let rv;
     // 현재 씬(스크롤섹션)에서 스크롤된 범위를 비율로 구하기
-    let scrollRatio = currentYOffset / sceneInfo[currentScene].scrollHeight;
+    const scrollHeight = sceneInfo[currentScene].scrollHeight;
+    const scrollRatio = currentYOffset / scrollHeight;
 
-    rv = scrollRatio * (values[1] - values[0]) + values[0];
+    if (values.length === 3) {
+      // start ~ end 사이에 애니메이션 실행
+      const partScrollStart = values[2].start * scrollHeight;
+      const partScrollEnd = values[2].end * scrollHeight;
+      const partScrollHeight = partScrollEnd - partScrollStart;
+
+      rv =
+        ((currentYOffset - partScrollStart) / partScrollHeight) *
+          (values[1] - values[0]) +
+        values[0];
+    } else {
+      rv = scrollRatio * (values[1] - values[0]) + values[0];
+    }
 
     return rv;
   }
@@ -94,7 +109,6 @@
           values.messageAOpacity,
           currentYOffset,
         );
-        console.log(messageAOpacityIn);
         objs.messageA.style.opacity = messageAOpacityIn;
         break;
       case 1:
@@ -107,6 +121,7 @@
   }
 
   function scrollLoop() {
+    enterNewScene = false;
     prevScrollHeight = 0;
 
     for (let i = 0; i < currentScene; i++) {
@@ -114,16 +129,21 @@
     }
 
     if (yOffset > prevScrollHeight + sceneInfo[currentScene].scrollHeight) {
+      enterNewScene = true;
       currentScene++;
       document.body.setAttribute("id", `show-scene-${currentScene}`);
     }
 
     if (yOffset < prevScrollHeight) {
-      if (currentScene === 0) return;
+      enterNewScene = true;
+      if (currentScene === 0) return; // 브라우저 바운스 효과로 인해 마이너스가 되는 것을 방지(모바일)
       currentScene--;
       document.body.setAttribute("id", `show-scene-${currentScene}`);
     }
 
+    if (enterNewScene) return;
+
+    playAnimation();
     // console.log("전체 스크롤 구간:", prevScrollHeight);
     // console.log("현재 활성화된 씬:", currentScene);
   }
